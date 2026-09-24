@@ -1,12 +1,12 @@
 import { NavLink, useLocation } from 'react-router';
 import { Search, Sparkles } from 'lucide-react';
-import { useSettings, selectHasAnthropicKey } from '@/store/settings';
+import { useSettings, selectAiLive } from '@/store/settings';
 import { pageTitle } from './nav';
 import { LogoMark } from './Logo';
 
 export function TopBar() {
   const { pathname } = useLocation();
-  const hasKey = useSettings(selectHasAnthropicKey);
+  const hasKey = useSettings(selectAiLive);
   const repId = useSettings((s) => s.currentRepId);
 
   return (

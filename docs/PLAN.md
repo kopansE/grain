@@ -200,7 +200,7 @@ Score is 0–100, transparent, and every component is visible in the UI. Weights
 | Cost efficiency | 0.10 | `1 − clamp(totalCost / 12000, 0, 1)` where totalCost = ticket + estimated travel from TLV (flight bucket by distance + hotel per night × nights) + booth if planned |
 | Track record | 0.10 | If attended before: `clamp(leadsPerDay / 8, 0, 1)`. Else 0.5 (neutral, "unknown"). This is the feedback loop: logging leads at an event changes next year's score. |
 
-**Tiers.** ≥ 72 → **Anchor** (Tier 1: booth or full team). 55–71 → **Cover** (Tier 2: 1–2 reps walk the floor). 38–54 → **Opportunistic** (Tier 3: only if it clusters with an Anchor trip). < 38 → **Skip**.
+**Tiers.** ≥ 75 → **Anchor** (Tier 1: booth or full team). 58–74 → **Cover** (Tier 2: 1–2 reps walk the floor). 40–57 → **Opportunistic** (Tier 3: only if it clusters with an Anchor trip). < 40 → **Skip**.
 
 **Cluster bonus.** An Opportunistic event within 7 days and 1,500 km of an Anchor or Cover event that is `planned` gets +8 and a "piggyback" badge. Rationale: marginal cost of a second event on the same trip is a day, not a flight.
 
