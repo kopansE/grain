@@ -1,8 +1,8 @@
 import type { IncomingMessage } from 'node:http';
 import type { Plugin } from 'vite';
-import { handleAi } from './ai.ts';
-import { handleHubspot } from './hubspot.ts';
-import type { ProxyRequest } from './types.ts';
+import { handleAi } from './ai';
+import { handleHubspot } from './hubspot';
+import type { ProxyRequest } from './types';
 
 /**
  * Mounts the same handlers Vercel runs, inside `vite dev`, so local

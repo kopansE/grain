@@ -27,3 +27,5 @@ coverage/
 
 # scratch
 tmp/
+
+.vercel

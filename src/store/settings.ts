@@ -5,10 +5,12 @@ import { DEFAULT_WEIGHTS } from '@/domain/scoring';
 import { HOME_BASES } from '@/lib/geo';
 
 export const MODEL_OPTIONS = [
-  { id: 'claude-opus-5', label: 'Claude Opus 5', hint: 'Default. Best judgment.' },
-  { id: 'claude-sonnet-5', label: 'Claude Sonnet 5', hint: 'Faster.' },
+  { id: 'claude-sonnet-5', label: 'Claude Sonnet 5', hint: 'Default. Fast and sharp; web discovery in about a minute.' },
+  { id: 'claude-opus-5', label: 'Claude Opus 5', hint: 'Deepest judgment, slower.' },
   { id: 'claude-haiku-4-5', label: 'Claude Haiku 4.5', hint: 'Fastest, cheapest.' },
 ] as const;
+
+export const DEFAULT_MODEL = 'claude-sonnet-5';
 
 export interface SettingsState {
   /** Stored only in this browser. Sent per request to the proxy, never to a third party. */
@@ -34,7 +36,7 @@ export const useSettings = create<SettingsState>()(
     (set) => ({
       anthropicKey: '',
       hubspotToken: '',
-      model: 'claude-opus-5',
+      model: DEFAULT_MODEL,
       currentRepId: 'noa',
       weights: DEFAULT_WEIGHTS,
       presetId: 'pipeline',
@@ -46,7 +48,16 @@ export const useSettings = create<SettingsState>()(
       update: (patch) => set(patch),
       setWeights: (weights, presetId = 'custom') => set({ weights, presetId }),
     }),
-    { name: 'orbit.settings', version: 1 },
+    {
+      name: 'orbit.settings',
+      version: 2,
+      migrate: (persisted, version) => {
+        const s = (persisted ?? {}) as Partial<SettingsState>;
+        // v1 defaulted to Opus 5; keep an explicit user choice, reset the old default.
+        if (version < 2 && s.model === 'claude-opus-5') return { ...s, model: DEFAULT_MODEL } as SettingsState;
+        return s as SettingsState;
+      },
+    },
   ),
 );
 

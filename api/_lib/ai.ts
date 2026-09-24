@@ -1,8 +1,8 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { fail, header, type ProxyRequest, type ProxyResponse } from './types.ts';
-import { arcSummary, discover, extractCard, extractLead, followUp, preBrief, type AiCtx } from './features.ts';
+import { fail, header, type ProxyRequest, type ProxyResponse } from './types';
+import { arcSummary, discover, extractCard, extractLead, followUp, preBrief, type AiCtx } from './features';
 
-export const DEFAULT_MODEL = 'claude-opus-5';
+export const DEFAULT_MODEL = 'claude-sonnet-5';
 
 /** Keys are resolved per request: the user's key from Settings wins, then the host's env fallback. */
 export function resolveAnthropicKey(req: ProxyRequest): string | undefined {

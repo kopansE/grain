@@ -1,7 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
 import { z } from 'zod';
-import { GRAIN_CONTEXT } from './grainContext.ts';
+import { GRAIN_CONTEXT } from './grainContext';
 
 /**
  * Every AI feature in one place: the schema it must return, the prompt, and

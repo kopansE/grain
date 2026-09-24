@@ -34,7 +34,7 @@ Every AI feature has a hand-written demo answer, so the live link works before a
 
 ## Try it
 
-**Live:** _add your Vercel URL here after deploying_
+**Live:** [grain-pi.vercel.app](https://grain-pi.vercel.app)
 
 A sixty-second tour:
 
