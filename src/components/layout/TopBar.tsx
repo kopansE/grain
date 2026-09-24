@@ -3,11 +3,13 @@ import { Search, Sparkles } from 'lucide-react';
 import { useSettings, selectAiLive } from '@/store/settings';
 import { pageTitle } from './nav';
 import { LogoMark } from './Logo';
+import { usePalette } from './CommandPalette';
 
 export function TopBar() {
   const { pathname } = useLocation();
   const hasKey = useSettings(selectAiLive);
   const repId = useSettings((s) => s.currentRepId);
+  const openPalette = usePalette((s) => s.setOpen);
 
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-line bg-bg/70 px-4 backdrop-blur-md lg:px-8">
@@ -29,8 +31,9 @@ export function TopBar() {
         )}
         <button
           type="button"
+          onClick={() => openPalette(true)}
           className="flex h-9 items-center gap-2 rounded-lg border border-line bg-surface px-3 text-[12.5px] text-ink-muted transition-colors hover:border-line-strong hover:text-ink"
-          title="Search (coming soon)"
+          title="Search events, people and actions"
         >
           <Search className="h-3.5 w-3.5" />
           <span className="hidden sm:inline">Search</span>

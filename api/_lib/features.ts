@@ -146,6 +146,34 @@ export const DiscoverPayload = z.object({
   homeBase: z.string().optional(),
 });
 
+export const PreBriefSchema = z.object({
+  headline: z.string().describe('One line: why this event matters for Grain this year.'),
+  whoToMeet: z
+    .array(
+      z.object({
+        name: z.string(),
+        company: z.string(),
+        why: z.string().describe('One sentence on where the relationship stands and what to move.'),
+        opener: z.string().describe('A spoken first line, under 20 words.'),
+      }),
+    )
+    .describe('Only people from the provided known list. Most valuable first. At most 6.'),
+  targets: z.array(z.string()).describe('3 to 5 kinds of companies or roles to hunt on the floor, specific to this event.'),
+  talkingPoints: z.array(z.string()).describe('3 talking points that connect the event agenda to Grain, in plain words.'),
+  checklist: z.array(z.string()).describe('5 practical items for the team before and during the event.'),
+});
+export type PreBrief = z.infer<typeof PreBriefSchema>;
+
+export const PreBriefPayload = z.object({
+  conference: z.object({ name: z.string(), city: z.string(), dates: z.string(), description: z.string(), verticals: z.array(z.string()), audienceSize: z.number().optional() }),
+  known: z
+    .array(z.object({ name: z.string(), company: z.string(), title: z.string().optional(), classification: z.string(), lastMet: z.string(), nextStep: z.string().optional(), notes: z.string().optional() }))
+    .default([]),
+  recentPains: z.array(z.string()).default([]),
+  reps: z.array(z.string()).default([]),
+  today: z.string().optional(),
+});
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -281,6 +309,28 @@ export async function followUp(ctx: AiCtx, raw: unknown): Promise<FollowUp> {
     ],
   });
   return parsedOrThrow(res.parsed_output, 'email');
+}
+
+// ---------------------------------------------------------------------------
+// 4b. Pre-conference brief
+// ---------------------------------------------------------------------------
+export async function preBrief(ctx: AiCtx, raw: unknown): Promise<PreBrief> {
+  const p = PreBriefPayload.parse(raw);
+  const res = await ctx.client.messages.parse({
+    model: ctx.model,
+    max_tokens: 6000,
+    system: `${SYSTEM_BASE}\n\nYou write a one-page pre-conference brief for the sales team. Practical, specific to this event, no filler. whoToMeet may only include people from the known list. Talking points must connect what this event's audience cares about to what Grain does. The checklist is concrete (things like "pre-book meetings with X", "bring the travel payout one-pager"), never generic ("network!").`,
+    output_config: { format: zodOutputFormat(PreBriefSchema), effort: 'medium' },
+    messages: [
+      {
+        role: 'user',
+        content: `Event: ${p.conference.name}, ${p.conference.city}, ${p.conference.dates}. ${p.conference.description} Verticals: ${p.conference.verticals.join(', ')}.${p.conference.audienceSize ? ` About ${p.conference.audienceSize} attendees.` : ''}\nToday: ${p.today ?? 'unknown'}. Reps going: ${p.reps.join(', ') || 'not assigned yet'}.\n\nPeople we already know who attend this series:\n${
+          p.known.map((k) => `- ${k.name}, ${k.title ? `${k.title}, ` : ''}${k.company}. Status: ${k.classification}. Last met ${k.lastMet}.${k.nextStep ? ` Open next step: ${k.nextStep}.` : ''}${k.notes ? ` Notes: "${k.notes}"` : ''}`).join('\n') || '- none yet'
+        }\n\nPains we heard most at recent events: ${p.recentPains.join(', ') || 'none logged'}.`,
+      },
+    ],
+  });
+  return parsedOrThrow(res.parsed_output, 'brief');
 }
 
 // ---------------------------------------------------------------------------

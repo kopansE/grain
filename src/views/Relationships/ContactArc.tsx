@@ -3,6 +3,7 @@ import { NavLink, useNavigate, useSearchParams } from 'react-router';
 import { ArrowLeft, ExternalLink, GitMerge, Mail, RefreshCw, Sparkles, Undo2, Upload } from 'lucide-react';
 import { useArcAi } from '@/lib/useArcAi';
 import { FollowUpSheet } from './FollowUpSheet';
+import { HubspotSheet } from './HubspotSheet';
 import { Avatar } from '@/components/ui/Avatar';
 import { ArcBadge, Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -49,11 +50,14 @@ export function ContactArc({
   const [mergeOpen, setMergeOpen] = useState(false);
   const [params, setParams] = useSearchParams();
   const draftOpen = params.has('draft');
-  const closeDraft = () => {
+  const pushOpen = params.has('push');
+  const closeParam = (key: string) => () => {
     const next = new URLSearchParams(params);
-    next.delete('draft');
+    next.delete(key);
     setParams(next, { replace: true });
   };
+  const closeDraft = closeParam('draft');
+  const closePush = closeParam('push');
   const { ai, loading: aiLoading, error: aiError, regenerate } = useArcAi(contact, arc);
 
   const first = encounters[0];
@@ -173,6 +177,7 @@ export function ContactArc({
       </section>
 
       <FollowUpSheet open={draftOpen} onClose={closeDraft} contact={contact} arc={arc} />
+      <HubspotSheet open={pushOpen} onClose={closePush} contact={contact} encounters={encounters} />
 
       <MergeSheet
         open={mergeOpen}

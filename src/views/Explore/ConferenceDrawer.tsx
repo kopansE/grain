@@ -1,6 +1,9 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { NavLink, useNavigate, useSearchParams } from 'react-router';
-import { ExternalLink, MapPin, Plane, Ticket, Users, Zap } from 'lucide-react';
+import { CalendarPlus, CalendarX2, ExternalLink, MapPin, Plane, Sparkles, Ticket, Users, Zap } from 'lucide-react';
+import { PreBriefSheet } from './PreBriefSheet';
+import { holidayClashes } from '@/domain/holidays';
+import { downloadIcs } from '@/lib/ics';
 import { Drawer } from '@/components/ui/Drawer';
 import { Button } from '@/components/ui/Button';
 import { ScoreRing } from '@/components/ui/ScoreRing';
@@ -111,6 +114,8 @@ function DrawerBody({ c }: { c: Conference }) {
   const until = daysUntil(c.startDate, today);
   const isPast = c.endDate < today;
   const host = r.piggybackOf ? conferences.find((x) => x.id === r.piggybackOf) : undefined;
+  const clash = useMemo(() => holidayClashes([{ ...c, status: c.status === 'skipped' ? 'skipped' : 'planned' }])[0], [c]);
+  const [briefOpen, setBriefOpen] = useState(false);
 
   // People we've met at other editions of this series, plus leads captured here.
   const { knownHere, leadsHere } = useMemo(() => {
@@ -162,7 +167,24 @@ function DrawerBody({ c }: { c: Conference }) {
             Show floor mode
           </Button>
         )}
+        {!isPast && (
+          <Button icon={<Sparkles className="h-4 w-4 text-accent" />} onClick={() => setBriefOpen(true)}>
+            Prep brief
+          </Button>
+        )}
+        <Button variant="ghost" icon={<CalendarPlus className="h-4 w-4" />} onClick={() => downloadIcs([c], `${c.id}.ics`)} title="Add to your calendar">
+          Calendar
+        </Button>
       </div>
+      {clash && !isPast && (
+        <p className="mt-3 flex items-start gap-2 rounded-xl border border-rose/30 bg-rose/[0.06] px-3 py-2 text-[12.5px] text-ink-muted">
+          <CalendarX2 className="mt-0.5 h-4 w-4 shrink-0 text-rose" />
+          <span>
+            {clash.overlaps ? 'Runs during' : 'Sits right next to'} <b className="font-semibold text-ink">{clash.holiday.name}</b> ({fmtDateRange(clash.holiday.startDate, clash.holiday.endDate, false)}). Plan flights and booth staffing around it.
+          </span>
+        </p>
+      )}
+      <PreBriefSheet open={briefOpen} onClose={() => setBriefOpen(false)} conference={c} />
 
       <Section title="Logistics">
         <div className="grid grid-cols-2 gap-2">

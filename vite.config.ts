@@ -3,6 +3,7 @@ import { fileURLToPath, URL } from 'node:url';
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
+import { VitePWA } from 'vite-plugin-pwa';
 import { devApiPlugin } from './api/_lib/dev-plugin.ts';
 
 /**
@@ -35,7 +36,23 @@ function readServerEnv(): Record<string, string | undefined> {
 export default defineConfig(() => {
   const env = readServerEnv();
   return {
-    plugins: [react(), tailwindcss(), devApiPlugin(env)],
+    plugins: [
+      react(),
+      tailwindcss(),
+      devApiPlugin(env),
+      // Installable on a phone; the app shell and textures work offline, the API never gets cached.
+      VitePWA({
+        registerType: 'autoUpdate',
+        manifest: false,
+        workbox: {
+          globPatterns: ['**/*.{js,css,html,svg,png,jpg,webmanifest}'],
+          maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+          navigateFallback: '/index.html',
+          navigateFallbackDenylist: [/^\/api\//],
+          runtimeCaching: [{ urlPattern: /^\/api\//, handler: 'NetworkOnly' }],
+        },
+      }),
+    ],
     resolve: {
       alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
     },

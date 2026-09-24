@@ -1,9 +1,9 @@
 import { useSettings } from '@/store/settings';
-import type { ArcAi, DiscoverResult, FollowUp, Lead } from '@api/_lib/features.ts';
+import type { ArcAi, DiscoverResult, FollowUp, Lead, PreBrief } from '@api/_lib/features.ts';
 
-export type { ArcAi, DiscoverResult, FollowUp, Lead };
+export type { ArcAi, DiscoverResult, FollowUp, Lead, PreBrief };
 
-export type AiFeature = 'ping' | 'extractLead' | 'extractCard' | 'arcSummary' | 'followUp' | 'discover';
+export type AiFeature = 'ping' | 'extractLead' | 'extractCard' | 'arcSummary' | 'followUp' | 'preBrief' | 'discover';
 
 export class AiError extends Error {
   constructor(
@@ -82,7 +82,7 @@ export async function pingAi(userKey?: string): Promise<PingResult> {
       body: JSON.stringify({ feature: 'ping', model: useSettings.getState().model }),
     });
     const json = (await res.json().catch(() => ({}))) as PingResult & { error?: string };
-    if (!res.ok) return { ok: false, message: json.message ?? `HTTP ${res.status}` };
+    if (!res.ok || !json.ok) return { ok: false, message: json.message ?? `HTTP ${res.status}` };
     if (!userKey) useSettings.getState().update({ hostHasAnthropicKey: !!json.usingHostKey });
     return { ok: true, model: json.model, displayName: json.displayName, usingHostKey: json.usingHostKey };
   } catch (e) {

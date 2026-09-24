@@ -10,7 +10,11 @@ import { fmtUsd, fmtUsdCompact, plural } from '@/lib/format';
 import { ConferenceDrawerFromQuery, useOpenConference } from '@/views/Explore/ConferenceDrawer';
 import { TimelineRibbon, type RibbonMode } from './TimelineRibbon';
 import { CoverageHeatmap } from './CoverageHeatmap';
-import { ClusterCard, CollisionCard, GapCard, LoadCard, UnassignedCard } from './Insights';
+import { ClusterCard, CollisionCard, GapCard, HolidayCard, LoadCard, UnassignedCard } from './Insights';
+import { holidayClashes } from '@/domain/holidays';
+import { downloadIcs } from '@/lib/ics';
+import { Button } from '@/components/ui/Button';
+import { CalendarPlus } from 'lucide-react';
 
 export default function Plan() {
   const upcoming = useUpcoming();
@@ -39,6 +43,7 @@ export default function Plan() {
   const pct = budget > 0 ? Math.min(100, (total / budget) * 100) : 0;
 
   const stretched = loads.filter((l) => l.peak.count >= 3);
+  const clashes = useMemo(() => holidayClashes(upcoming.filter((c) => c.status === 'planned' || scores.get(c.id)?.tier === 'anchor')), [upcoming, scores]);
   // Only collisions that actually double-book someone, or pit two planned trips against each other.
   const realCollisions = collisions.filter((k) => k.sharedRepIds.length > 0 || (k.a.status === 'planned' && k.b.status === 'planned'));
   const strongGaps = gaps.filter((g) => g.kind === 'no-plans').sort((a, b) => (scores.get(b.candidates[0]!.id)?.score ?? 0) - (scores.get(a.candidates[0]!.id)?.score ?? 0)).slice(0, 4);
@@ -73,6 +78,9 @@ export default function Plan() {
               { value: 'rep', label: 'By rep' },
             ]}
           />
+          <Button size="sm" icon={<CalendarPlus className="h-3.5 w-3.5" />} onClick={() => downloadIcs(planned, 'grain-orbit-planned-trips.ics')} disabled={planned.length === 0} title="Download every planned trip as a calendar file">
+            Calendar
+          </Button>
         </div>
       </header>
 
@@ -137,6 +145,7 @@ export default function Plan() {
           {realCollisions.map((k, i) => (
             <CollisionCard key={`${k.a.id}-${k.b.id}`} k={k} onOpen={openConference} index={clusters.length + i} />
           ))}
+          {clashes.length > 0 && <HolidayCard clashes={clashes} onOpen={openConference} index={clusters.length + realCollisions.length} />}
           {strongGaps.map((g, i) => (
             <GapCard key={`${g.quarter.id}-${g.region}`} g={g} scores={scores} onOpen={openConference} index={clusters.length + realCollisions.length + i} />
           ))}

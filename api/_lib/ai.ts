@@ -1,6 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { fail, header, type ProxyRequest, type ProxyResponse } from './types.ts';
-import { arcSummary, discover, extractCard, extractLead, followUp, type AiCtx } from './features.ts';
+import { arcSummary, discover, extractCard, extractLead, followUp, preBrief, type AiCtx } from './features.ts';
 
 export const DEFAULT_MODEL = 'claude-opus-5';
 
@@ -19,6 +19,8 @@ export async function handleAi(req: ProxyRequest): Promise<ProxyResponse> {
   const body = (req.body ?? {}) as AiRequestBody;
   const apiKey = resolveAnthropicKey(req);
   const usingHostKey = !header(req.headers, 'x-anthropic-key') && !!req.env.ANTHROPIC_API_KEY;
+  // The ping never 4xxs, so a host without a key does not log console errors on every page load.
+  if (!apiKey && body.feature === 'ping') return { status: 200, body: { ok: false, error: 'no_key', message: 'No Anthropic API key. Add one in Settings to enable live AI.' } };
   if (!apiKey) return fail(401, 'no_key', 'No Anthropic API key. Add one in Settings to enable live AI.');
 
   const model = body.model || req.env.ANTHROPIC_MODEL || DEFAULT_MODEL;
@@ -30,8 +32,13 @@ export async function handleAi(req: ProxyRequest): Promise<ProxyResponse> {
     switch (body.feature) {
       case 'ping': {
         // Cheapest possible round-trip: no tokens are consumed.
-        const m = await client.models.retrieve(model);
-        return { status: 200, body: { ok: true, model: m.id, displayName: m.display_name, usingHostKey } };
+        try {
+          const m = await client.models.retrieve(model);
+          return { status: 200, body: { ok: true, model: m.id, displayName: m.display_name, usingHostKey } };
+        } catch (e) {
+          const mapped = mapAnthropicError(e);
+          return { status: 200, body: { ok: false, ...(mapped.body as object) } };
+        }
       }
       case 'extractLead':
         return { status: 200, body: await extractLead(ctx, body.payload) };
@@ -41,6 +48,8 @@ export async function handleAi(req: ProxyRequest): Promise<ProxyResponse> {
         return { status: 200, body: await arcSummary(ctx, body.payload) };
       case 'followUp':
         return { status: 200, body: await followUp(ctx, body.payload) };
+      case 'preBrief':
+        return { status: 200, body: await preBrief(ctx, body.payload) };
       case 'discover':
         return { status: 200, body: await discover(ctx, body.payload) };
       default:

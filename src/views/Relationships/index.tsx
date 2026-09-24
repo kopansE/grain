@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react';
 import { NavLink, useNavigate, useParams, useSearchParams } from 'react-router';
 import { AnimatePresence, motion } from 'motion/react';
-import { Search, Users } from 'lucide-react';
+import { Search, Upload, Users } from 'lucide-react';
 import { Avatar } from '@/components/ui/Avatar';
+import { Button } from '@/components/ui/Button';
+import { HubspotSheet } from './HubspotSheet';
 import { ArcBadge, ARC_COLOR, InterestDot } from '@/components/ui/Badge';
 import { Chip } from '@/components/ui/Chip';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -30,6 +32,8 @@ export default function Relationships() {
   const selected = useContact(id);
   const [q, setQ] = useState('');
   const [sort, setSort] = useState<SortKey>('recent');
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const unsyncedAll = useMemo(() => encounters.filter((e) => e.hubspot?.status !== 'synced'), [encounters]);
   const arcFilter = (params.get('arc') as ArcClass | null) ?? null;
   const syncFilter = params.get('sync');
   const today = new Date().toISOString().slice(0, 10);
@@ -112,6 +116,14 @@ export default function Relationships() {
               Not in HubSpot
             </Chip>
           </div>
+          {syncFilter === 'unsynced' && unsyncedAll.length > 0 && (
+            <div className="mb-3">
+              <Button size="sm" variant="primary" icon={<Upload className="h-3.5 w-3.5" />} onClick={() => setBulkOpen(true)}>
+                Push all {unsyncedAll.length} to HubSpot
+              </Button>
+              <HubspotSheet open={bulkOpen} onClose={() => setBulkOpen(false)} encounters={unsyncedAll} title={`Push ${unsyncedAll.length} meetings to HubSpot`} />
+            </div>
+          )}
 
           {rows.length === 0 ? (
             <EmptyState icon={<Users className="h-8 w-8" />} title="Nobody here yet" body="Capture a lead in show-floor mode and they'll show up with a relationship read." />

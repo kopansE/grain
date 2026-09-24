@@ -1,6 +1,7 @@
 import { motion } from 'motion/react';
-import { AlertTriangle, Compass, Luggage, Route, UserX, Users } from 'lucide-react';
+import { AlertTriangle, CalendarX2, Compass, Luggage, Route, UserX, Users } from 'lucide-react';
 import type { Cluster, Collision, Gap, RepLoad } from '@/domain/clustering';
+import type { HolidayClash } from '@/domain/holidays';
 import { REGION_LABELS, type Conference, type ScoreResult } from '@/domain/types';
 import { Button } from '@/components/ui/Button';
 import { TierBadge } from '@/components/ui/Badge';
@@ -141,6 +142,22 @@ export function LoadCard({ load, onOpen, index }: { load: RepLoad; onOpen: (id: 
         ))}
         . {plural(load.nights, 'hotel night')} and {plural(load.travelDays, 'travel day')} this year.
       </p>
+    </Card>
+  );
+}
+
+export function HolidayCard({ clashes, onOpen, index }: { clashes: HolidayClash[]; onOpen: (id: string) => void; index: number }) {
+  return (
+    <Card icon={<CalendarX2 className="h-4 w-4 text-rose" />} title="Holiday clashes for a Tel Aviv team" tone="rose" index={index}>
+      <ul className="flex flex-col gap-1.5">
+        {clashes.slice(0, 5).map((k) => (
+          <li key={k.conference.id}>
+            <EventLink c={k.conference} onOpen={onOpen} /> {k.overlaps ? 'runs during' : 'sits right next to'} <span className="font-medium text-ink">{k.holiday.name}</span> ({fmtDateRange(k.holiday.startDate, k.holiday.endDate, false)}).
+            {k.overlaps ? ' Booth staffing and flights will collide with the holiday.' : ' Someone flies on the eve or the day after.'}
+          </li>
+        ))}
+      </ul>
+      <p className="mt-2 text-[11.5px] text-ink-dim">Dates from a fixed table; verify against the Hebrew calendar for the year.</p>
     </Card>
   );
 }

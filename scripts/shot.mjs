@@ -58,10 +58,6 @@ try {
   console.log(`(navigation did not go idle: ${e.message.split('\n')[0]}; taking the screenshot anyway)`);
 }
 await new Promise((r) => setTimeout(r, wait));
-if (typing) {
-  await page.type(typing.selector, typing.text, { delay: 20 });
-  await new Promise((r) => setTimeout(r, 600));
-}
 for (const sel of clicks) {
   try {
     await page.click(sel);
@@ -70,6 +66,16 @@ for (const sel of clicks) {
     console.log(`(click failed for ${sel}: ${e.message.split('\n')[0]})`);
   }
 }
+if (typing) {
+  try {
+    await page.type(typing.selector, typing.text, { delay: 20 });
+    await new Promise((r) => setTimeout(r, 600));
+  } catch (e) {
+    console.log(`(type failed for ${typing.selector}: ${e.message.split('\n')[0]})`);
+  }
+}
+// When a long wait was requested after clicks (e.g. an AI call), honour it once more.
+if (clicks.length && wait > 5000) await new Promise((r) => setTimeout(r, wait));
 await page.screenshot({ path: out, fullPage: full });
 await browser.close();
 

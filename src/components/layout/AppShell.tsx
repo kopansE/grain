@@ -5,11 +5,14 @@ import { MobileTabBar, Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 import { Toaster } from '@/components/ui/Toast';
 import { bootstrapAiStatus } from '@/lib/ai';
+import { bootstrapHubspotStatus } from '@/lib/hubspot';
+import { CommandPalette } from './CommandPalette';
 
 export function AppShell() {
   const { pathname } = useLocation();
   useEffect(() => {
     void bootstrapAiStatus();
+    void bootstrapHubspotStatus();
   }, []);
   // Animate on section change, not on every nested id change.
   const sectionKey = '/' + (pathname.split('/')[1] ?? '');
@@ -36,6 +39,7 @@ export function AppShell() {
       </div>
       <MobileTabBar />
       <Toaster />
+      <CommandPalette />
     </div>
   );
 }
