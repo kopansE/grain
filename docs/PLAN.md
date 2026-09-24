@@ -1,6 +1,6 @@
 # Grain Orbit — Build Plan
 
-> **Status (2026-09-24):** every phase in §12 is built and committed, plus extras 1, 3 (calendar export), 4, 6, 7, 8 from §10. Remaining for the candidate: deploy on Vercel (README, "Host it yourself"), paste a valid HubSpot token, record the video (docs/VIDEO.md). The README's "How I built this with AI" section is a draft in the candidate's voice to edit.
+> **Status (2026-09-24):** every phase in §12 is built and committed, plus extras 1, 3 (calendar export), 4, 6, 7, 8 from §10. Live at https://grain-pi.vercel.app (Vercel project "grain" in the candidate's account, `ANTHROPIC_API_KEY` set as a production env var, deployment protection off; redeploy with `npx vercel deploy --prod --yes`). Remaining for the candidate: add a valid `HUBSPOT_ACCESS_TOKEN` env var (or paste it in Settings), record the video (docs/VIDEO.md), and edit the README's "How I built this with AI" draft.
 
 Conference intelligence for Grain's sales team. This document is the single source of truth for what we are building, why, and in what order. Any implementer (human or model) should read this end to end before writing code, then follow the phases in order and commit at each phase boundary.
 
