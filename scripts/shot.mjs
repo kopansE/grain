@@ -48,7 +48,11 @@ if (mobile) {
   await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 1 });
 }
 
-await page.goto(url, { waitUntil: 'networkidle2', timeout: 60000 });
+try {
+  await page.goto(url, { waitUntil: 'networkidle2', timeout: 25000 });
+} catch (e) {
+  console.log(`(navigation did not go idle: ${e.message.split('\n')[0]}; taking the screenshot anyway)`);
+}
 await new Promise((r) => setTimeout(r, wait));
 await page.screenshot({ path: out, fullPage: full });
 await browser.close();

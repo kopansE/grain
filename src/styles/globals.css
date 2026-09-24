@@ -166,3 +166,52 @@ body::after {
     display: none;
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* Range slider                                                        */
+/* ------------------------------------------------------------------ */
+input[type='range'].range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 22px;
+  background: transparent;
+  cursor: pointer;
+}
+input[type='range'].range::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--range-accent, var(--color-accent)) var(--pct, 0%), var(--color-surface-3) var(--pct, 0%));
+}
+input[type='range'].range::-moz-range-track {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--color-surface-3);
+}
+input[type='range'].range::-moz-range-progress {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--range-accent, var(--color-accent));
+}
+input[type='range'].range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  margin-top: -6px;
+  border-radius: 50%;
+  background: var(--color-ink);
+  border: 2px solid var(--range-accent, var(--color-accent));
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  transition: transform 0.15s var(--ease-spring);
+}
+input[type='range'].range::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-ink);
+  border: 2px solid var(--range-accent, var(--color-accent));
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+input[type='range'].range:active::-webkit-slider-thumb {
+  transform: scale(1.2);
+}

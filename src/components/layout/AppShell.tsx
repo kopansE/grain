@@ -2,6 +2,7 @@ import { Outlet, useLocation } from 'react-router';
 import { AnimatePresence, motion } from 'motion/react';
 import { MobileTabBar, Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
+import { Toaster } from '@/components/ui/Toast';
 
 export function AppShell() {
   const { pathname } = useLocation();
@@ -29,6 +30,7 @@ export function AppShell() {
         </main>
       </div>
       <MobileTabBar />
+      <Toaster />
     </div>
   );
 }

@@ -48,11 +48,10 @@ export function Sidebar() {
           to={CAPTURE_ITEM.to}
           className="flex items-center justify-between rounded-xl bg-accent px-3.5 py-3 text-[0.92rem] font-semibold text-bg shadow-glow-accent transition-transform hover:-translate-y-0.5 active:translate-y-0"
         >
-          <span className="flex items-center gap-2">
+          <span className="flex items-center gap-2 whitespace-nowrap">
             <CAPTURE_ITEM.icon className="h-[18px] w-[18px]" strokeWidth={2.2} />
             {CAPTURE_ITEM.label}
           </span>
-          <span className="rounded-md bg-bg/15 px-1.5 py-0.5 font-mono text-[10px] tracking-wide">PHONE</span>
         </NavLink>
       </div>
 
