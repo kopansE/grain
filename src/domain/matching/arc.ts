@@ -70,7 +70,7 @@ export function classifyArc(contact: Contact, allEncounters: Encounter[], ctx: A
     };
   }
 
-  const spanMonths = monthsBetween(first.capturedAt, last.capturedAt);
+  const spanMonths = Math.round(monthsBetween(first.capturedAt, last.capturedAt) * 10) / 10;
   const firstLevel = seniorityLevel(first.title);
   const lastLevel = seniorityLevel(last.title);
   const seniorityDelta = firstLevel !== undefined && lastLevel !== undefined ? lastLevel - firstLevel : 0;
@@ -129,7 +129,7 @@ export function classifyArc(contact: Contact, allEncounters: Encounter[], ctx: A
     confidence,
     signals,
     touches,
-    spanMonths: Math.round(spanMonths * 10) / 10,
+    spanMonths,
     seniorityDelta,
     intentTrend,
     nextStepsAgreed,
