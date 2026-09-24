@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { NavLink, useNavigate } from 'react-router';
-import { ArrowLeft, ExternalLink, GitMerge, Mail, Sparkles, Undo2, Upload } from 'lucide-react';
+import { NavLink, useNavigate, useSearchParams } from 'react-router';
+import { ArrowLeft, ExternalLink, GitMerge, Mail, RefreshCw, Sparkles, Undo2, Upload } from 'lucide-react';
+import { useArcAi } from '@/lib/useArcAi';
+import { FollowUpSheet } from './FollowUpSheet';
 import { Avatar } from '@/components/ui/Avatar';
 import { ArcBadge, Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -45,6 +47,14 @@ export function ContactArc({
   const unmergeContact = useData((s) => s.unmergeContact);
   const contacts = useData((s) => s.contacts);
   const [mergeOpen, setMergeOpen] = useState(false);
+  const [params, setParams] = useSearchParams();
+  const draftOpen = params.has('draft');
+  const closeDraft = () => {
+    const next = new URLSearchParams(params);
+    next.delete('draft');
+    setParams(next, { replace: true });
+  };
+  const { ai, loading: aiLoading, error: aiError, regenerate } = useArcAi(contact, arc);
 
   const first = encounters[0];
   const last = encounters[encounters.length - 1];
@@ -121,17 +131,31 @@ export function ContactArc({
 
       {arc && (
         <div className="card p-4">
-          <p className="flex items-center gap-1.5 font-mono text-[10.5px] uppercase tracking-[0.16em] text-ink-dim">
-            <Sparkles className="h-3.5 w-3.5 text-accent" /> Read of the relationship{arc.ai?.demo ? ' · demo' : ''}
-          </p>
-          {arc.ai ? (
+          <div className="flex items-center justify-between">
+            <p className="flex items-center gap-1.5 font-mono text-[10.5px] uppercase tracking-[0.16em] text-ink-dim">
+              <Sparkles className="h-3.5 w-3.5 text-accent" /> Read of the relationship{ai?.demo ? ' · demo' : ''}
+            </p>
+            <button type="button" onClick={regenerate} disabled={aiLoading} className="flex items-center gap-1 text-[11.5px] text-ink-dim hover:text-ink disabled:opacity-50" title="Regenerate">
+              <RefreshCw className={aiLoading ? 'h-3 w-3 animate-spin' : 'h-3 w-3'} /> {aiLoading ? 'Reading…' : 'Redo'}
+            </button>
+          </div>
+          {ai ? (
             <>
-              <p className="mt-2 text-[14px] leading-relaxed text-ink">{arc.ai.summary}</p>
-              <p className="mt-2 text-[14px] font-medium leading-relaxed text-accent-bright">{arc.ai.nudge}</p>
-              {arc.ai.opener && <p className="mt-2 text-[13px] italic leading-relaxed text-ink-muted">Opener: “{arc.ai.opener}”</p>}
+              <p className="mt-2 text-[14px] leading-relaxed text-ink">{ai.summary}</p>
+              <p className="mt-2 text-[14px] font-medium leading-relaxed text-accent-bright">{ai.nudge}</p>
+              {ai.opener && <p className="mt-2 text-[13px] italic leading-relaxed text-ink-muted">Opener: “{ai.opener}”</p>}
             </>
+          ) : aiLoading ? (
+            <div className="mt-2 space-y-2">
+              <div className="h-3.5 w-11/12 animate-pulse rounded bg-surface-3" />
+              <div className="h-3.5 w-3/4 animate-pulse rounded bg-surface-3" />
+              <div className="h-3.5 w-1/2 animate-pulse rounded bg-surface-3" />
+            </div>
           ) : (
-            <p className="mt-2 text-[14px] leading-relaxed text-ink">{NUDGE_GOAL[arc.classification]}</p>
+            <p className="mt-2 text-[14px] leading-relaxed text-ink">
+              {NUDGE_GOAL[arc.classification]}
+              {aiError && <span className="block text-[12px] text-rose">{aiError}</span>}
+            </p>
           )}
           <ul className="mt-3 flex flex-wrap gap-1.5">
             {arc.signals.map((s) => (
@@ -147,6 +171,8 @@ export function ContactArc({
         <p className="mb-3 font-mono text-[10.5px] uppercase tracking-[0.16em] text-ink-dim">Every meeting</p>
         <ArcTimeline encounters={encounters} reps={reps} conferenceName={nameOf} onToggleNextStep={setNextStepDone} />
       </section>
+
+      <FollowUpSheet open={draftOpen} onClose={closeDraft} contact={contact} arc={arc} />
 
       <MergeSheet
         open={mergeOpen}

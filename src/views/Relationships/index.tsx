@@ -73,8 +73,13 @@ export default function Relationships() {
   const showDetail = !!selected;
   const showList = desktop || !showDetail;
 
-  const openDraft = (contact: Contact) => navigate(`/contacts/${contact.id}?draft=1`);
-  const openPush = (contact: Contact) => navigate(`/contacts/${contact.id}?push=1`);
+  const withParam = (contact: Contact, key: string) => {
+    const next = new URLSearchParams(params);
+    next.set(key, '1');
+    return `/contacts/${contact.id}?${next}`;
+  };
+  const openDraft = (contact: Contact) => navigate(withParam(contact, 'draft'));
+  const openPush = (contact: Contact) => navigate(withParam(contact, 'push'));
 
   return (
     <div className={cn('grid gap-6', desktop && showDetail ? 'lg:grid-cols-[360px_minmax(0,1fr)]' : '')}>

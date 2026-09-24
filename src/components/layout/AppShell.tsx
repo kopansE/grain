@@ -1,11 +1,16 @@
+import { useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router';
 import { AnimatePresence, motion } from 'motion/react';
 import { MobileTabBar, Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 import { Toaster } from '@/components/ui/Toast';
+import { bootstrapAiStatus } from '@/lib/ai';
 
 export function AppShell() {
   const { pathname } = useLocation();
+  useEffect(() => {
+    void bootstrapAiStatus();
+  }, []);
   // Animate on section change, not on every nested id change.
   const sectionKey = '/' + (pathname.split('/')[1] ?? '');
 

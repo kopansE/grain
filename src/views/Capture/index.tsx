@@ -13,12 +13,29 @@ import { findCandidates, AUTO_LINK, ASK, type MatchCandidate } from '@/domain/ma
 import type { Conference, Encounter } from '@/domain/types';
 import { listen, speechSupported, type Listener } from '@/lib/speech';
 import { quickParse } from '@/lib/quickParse';
+import { aiIsLive, bootstrapAiStatus, callAi, type Lead } from '@/lib/ai';
+import { useArcAi } from '@/lib/useArcAi';
+import { demoExtract } from '@/data/seed/demoAi';
+import { NEXT_STEPS, PAIN_POINTS } from '@/data/seed/contacts';
 import { fmtDateRange, fmtDateTime, plural } from '@/lib/format';
 import { cn } from '@/lib/cn';
 import { CaptureForm, EMPTY_DRAFT, type Draft } from './CaptureForm';
 import { MatchCard, type LinkState } from './MatchCard';
 import { VoiceButton } from './VoiceButton';
 import { ConferencePicker } from './ConferencePicker';
+
+function leadToDraft(lead: Lead, notes: string): { patch: Partial<Draft>; filled: (keyof Draft)[] } {
+  const filled: (keyof Draft)[] = [];
+  const patch: Partial<Draft> = { notes: notes || lead.summary, interest: lead.interest, intent: lead.intent, painPoints: lead.painPoints.filter((p) => PAIN_POINTS.includes(p)) };
+  if (lead.name) (patch.name = lead.name), filled.push('name');
+  if (lead.company) (patch.company = lead.company), filled.push('company');
+  if (lead.title) (patch.title = lead.title), filled.push('title');
+  if (lead.email) (patch.email = lead.email), filled.push('email');
+  if (lead.phone) patch.phone = lead.phone;
+  if (lead.linkedin) patch.linkedin = lead.linkedin;
+  if (lead.nextStep && NEXT_STEPS.includes(lead.nextStep)) patch.nextStep = lead.nextStep;
+  return { patch, filled };
+}
 
 type Stage = 'idle' | 'listening' | 'extracting' | 'form' | 'saved';
 type Source = Encounter['source'];
@@ -75,6 +92,8 @@ export default function Capture() {
 
   const linkedContact = link ? contacts.find((c) => c.id === link.contactId) : undefined;
   const askCandidate = !link && candidate && candidate.confidence >= ASK && candidate.confidence < AUTO_LINK ? candidate : undefined;
+  const linkedArc = linkedContact ? arcs.get(linkedContact.id) : undefined;
+  const { ai: linkedAi, loading: linkedAiLoading } = useArcAi(linkedContact, linkedArc, { auto: !!linkedContact });
 
   const patch = useCallback((p: Partial<Draft>) => setDraft((d) => ({ ...d, ...p })), []);
 
@@ -84,8 +103,9 @@ export default function Capture() {
     listenerRef.current = undefined;
   }, []);
 
+  const [aiUsed, setAiUsed] = useState(false);
   const finishTranscript = useCallback(
-    (text: string) => {
+    async (text: string) => {
       const clean = text.trim();
       if (!clean) {
         setStage('idle');
@@ -93,30 +113,70 @@ export default function Capture() {
       }
       setStage('extracting');
       setSource('voice');
-      // Heuristic parse now; the AI extractor replaces this when a key is configured (phase 8).
-      const parsed = quickParse(clean);
-      const filled: (keyof Draft)[] = [];
-      const next: Partial<Draft> = { notes: clean, interest: parsed.interest, intent: parsed.intent, painPoints: parsed.painPoints };
-      if (parsed.name) (next.name = parsed.name), filled.push('name');
-      if (parsed.company) (next.company = parsed.company), filled.push('company');
-      if (parsed.title) (next.title = parsed.title), filled.push('title');
-      if (parsed.email) (next.email = parsed.email), filled.push('email');
-      if (parsed.phone) next.phone = parsed.phone;
-      if (parsed.nextStep) next.nextStep = parsed.nextStep;
-      setTimeout(() => {
-        setDraft((d) => ({ ...d, ...next }));
+      await bootstrapAiStatus();
+
+      const applyParsed = (patch: Partial<Draft>, filled: (keyof Draft)[]) => {
+        setDraft((d) => ({ ...d, ...patch }));
         setHighlight(filled);
         setStage('form');
         setTimeout(() => setHighlight([]), 2200);
-      }, 500);
+      };
+
+      // Heuristic parse is always available; the model replaces it when a key exists.
+      const heuristic = () => {
+        const parsed = quickParse(clean);
+        const filled: (keyof Draft)[] = [];
+        const patch: Partial<Draft> = { notes: clean, interest: parsed.interest, intent: parsed.intent, painPoints: parsed.painPoints };
+        if (parsed.name) (patch.name = parsed.name), filled.push('name');
+        if (parsed.company) (patch.company = parsed.company), filled.push('company');
+        if (parsed.title) (patch.title = parsed.title), filled.push('title');
+        if (parsed.email) (patch.email = parsed.email), filled.push('email');
+        if (parsed.phone) patch.phone = parsed.phone;
+        if (parsed.nextStep) patch.nextStep = parsed.nextStep;
+        return { patch, filled };
+      };
+
+      try {
+        const candidates = quickCandidates(clean);
+        const res = await callAi<Lead>(
+          'extractLead',
+          {
+            transcript: clean,
+            conference: conference ? { name: conference.name, city: conference.city, dates: fmtDateRange(conference.startDate, conference.endDate) } : undefined,
+            repName: rep?.name,
+            candidates,
+            painOptions: PAIN_POINTS,
+            nextStepOptions: NEXT_STEPS,
+          },
+          () => demoExtract(clean),
+        );
+        setAiUsed(!res.demo);
+        const { patch, filled } = leadToDraft(res.data, clean);
+        applyParsed(patch, filled);
+      } catch (e) {
+        const { patch, filled } = heuristic();
+        setTimeout(() => applyParsed(patch, filled), 400);
+        if (aiIsLive()) toast.error('AI extraction failed, used a quick parse instead', e instanceof Error ? e.message : undefined);
+      }
     },
-    [],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [conference?.id, rep?.id, contacts, encounters],
   );
+
+  /** Cheap pre-match so the model can normalise spelling to a known person. */
+  function quickCandidates(text: string): { name: string; company: string; title?: string }[] {
+    const words = new Set(text.toLowerCase().split(/[^a-z]+/).filter((w) => w.length > 2));
+    return contacts
+      .filter((c) => c.encounterIds.length > 0)
+      .filter((c) => c.canonicalName.toLowerCase().split(' ').some((p) => words.has(p)) || words.has(c.currentCompany.toLowerCase().split(' ')[0] ?? ''))
+      .slice(0, 5)
+      .map((c) => ({ name: c.canonicalName, company: c.currentCompany, title: c.currentTitle }));
+  }
 
   const toggleListening = () => {
     if (stage === 'listening') {
       stopListening();
-      finishTranscript(transcript);
+      void finishTranscript(transcript);
       return;
     }
     setInterim('');
@@ -134,7 +194,7 @@ export default function Capture() {
         setStage((s) => {
           if (s === 'listening') {
             // Browser ended the session (silence). Use what we have.
-            setTimeout(() => finishTranscript(transcript), 0);
+            setTimeout(() => void finishTranscript(transcript), 0);
             return 'extracting';
           }
           return s;
@@ -152,7 +212,7 @@ export default function Capture() {
     const say = params.get('say');
     if (say) {
       setTranscript(say);
-      finishTranscript(say);
+      void finishTranscript(say);
     } else if (params.get('mode') === 'type') {
       setStage('form');
     }
@@ -161,11 +221,34 @@ export default function Capture() {
   // ---- Card photo ----
   const onCardFile = (file: File) => {
     const reader = new FileReader();
-    reader.onload = () => {
-      setCardPreview(String(reader.result));
+    reader.onload = async () => {
+      const dataUrl = String(reader.result);
+      setCardPreview(dataUrl);
       setSource('card');
-      setStage('form');
-      toast.info('Card captured', 'Add an Anthropic key in Settings to read cards automatically. For now, type what you see.');
+      await bootstrapAiStatus();
+      if (!aiIsLive()) {
+        setStage('form');
+        toast.info('Card captured', 'Add an Anthropic key in Settings to read cards automatically. For now, type what you see.');
+        return;
+      }
+      setStage('extracting');
+      try {
+        const res = await callAi<Lead>('extractCard', {
+          image: dataUrl,
+          conference: conference ? { name: conference.name, city: conference.city } : undefined,
+          painOptions: PAIN_POINTS,
+          nextStepOptions: NEXT_STEPS,
+        });
+        setAiUsed(true);
+        const { patch, filled } = leadToDraft(res.data, '');
+        setDraft((d) => ({ ...d, ...patch }));
+        setHighlight(filled);
+        setStage('form');
+        setTimeout(() => setHighlight([]), 2200);
+      } catch (e) {
+        setStage('form');
+        toast.error('Could not read the card', e instanceof Error ? e.message : undefined);
+      }
     };
     reader.readAsDataURL(file);
   };
@@ -210,6 +293,7 @@ export default function Capture() {
     setCardPreview(undefined);
     setSource('typed');
     setSavedId(undefined);
+    setAiUsed(false);
     setStage('idle');
   };
 
@@ -256,7 +340,7 @@ export default function Capture() {
       <AnimatePresence mode="wait">
         {(stage === 'idle' || stage === 'listening' || stage === 'extracting') && (
           <motion.section key="capture-entry" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, y: -10 }} className="mt-6 flex flex-col items-center">
-            <p className="display text-center text-[30px] leading-tight text-ink">{stage === 'listening' ? 'Listening…' : stage === 'extracting' ? 'Got it. Filling the form…' : 'Who did you just meet?'}</p>
+            <p className="display text-center text-[30px] leading-tight text-ink">{stage === 'listening' ? 'Listening…' : stage === 'extracting' ? (aiIsLive() ? 'Got it. Reading…' : 'Got it. Filling the form…') : 'Who did you just meet?'}</p>
             <p className="mt-1.5 max-w-[300px] text-center text-[13px] text-ink-muted">
               {stage === 'listening' ? 'Say the name, company, role, and what they care about. Tap to stop.' : stage === 'extracting' ? '' : 'Tap the mic and talk. Or snap their card. Ten seconds, done.'}
             </p>
@@ -305,6 +389,11 @@ export default function Capture() {
                 <img src={cardPreview} alt="Business card" className="max-h-40 w-full object-cover" />
               </div>
             )}
+            {aiUsed && (
+              <p className="mb-3 flex items-center gap-1.5 text-[12px] text-ink-dim">
+                <Sparkles className="h-3.5 w-3.5 text-accent" /> Filled by AI from your {source === 'card' ? 'card photo' : 'words'}. Check the name and company.
+              </p>
+            )}
             <CaptureForm draft={draft} onChange={patch} highlight={highlight}>
               <MatchCard
                 candidate={askCandidate}
@@ -320,6 +409,8 @@ export default function Capture() {
                   if (link) setRejected((s) => new Set([...s, link.contactId]));
                   setLink(null);
                 }}
+                aiSummary={linkedAi ? { summary: linkedAi.summary, nudge: linkedAi.nudge, demo: linkedAi.demo } : undefined}
+                aiLoading={linkedAiLoading}
               />
             </CaptureForm>
 
