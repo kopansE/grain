@@ -10,7 +10,7 @@ export function NeedsAttention() {
   const unsynced = useData((s) => s.encounters.filter((e) => e.hubspot?.status !== 'synced').length);
   const items: { key: string; icon: React.ReactNode; text: React.ReactNode; to: string }[] = [];
 
-  for (const k of collisions.slice(0, 2)) {
+  for (const k of collisions.filter((x) => x.sharedRepIds.length > 0 || (x.a.status === 'planned' && x.b.status === 'planned')).slice(0, 2)) {
     const shared = k.sharedRepIds.map((id) => reps.find((r) => r.id === id)?.name.split(' ')[0]).filter(Boolean);
     items.push({
       key: `col-${k.a.id}-${k.b.id}`,

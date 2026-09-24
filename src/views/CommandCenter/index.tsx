@@ -1,5 +1,4 @@
 import { Suspense, lazy, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router';
 import { Anchor, CalendarCheck, CloudOff, Flame, Users } from 'lucide-react';
 import { Kpi } from '@/components/ui/Kpi';
 import { TIER_COLOR } from '@/components/ui/Badge';
@@ -9,7 +8,7 @@ import { useSettings } from '@/store/settings';
 import { useArcs, usePlanningInsights, useScores, useToday, useUpcoming } from '@/store/selectors';
 import { estimateTravel, eventDays } from '@/lib/geo';
 import { fmtUsdCompact, plural } from '@/lib/format';
-import { ConferenceDrawer } from '@/views/Explore/ConferenceDrawer';
+import { ConferenceDrawerFromQuery, useOpenConference } from '@/views/Explore/ConferenceDrawer';
 import { UpNext } from './UpNext';
 import { RelationshipRadar } from './RelationshipRadar';
 import { CoverageStrip } from './CoverageStrip';
@@ -23,7 +22,7 @@ function greeting(): string {
 }
 
 export default function CommandCenter() {
-  const navigate = useNavigate();
+  const openConference = useOpenConference();
   const today = useToday();
   const upcoming = useUpcoming();
   const scores = useScores();
@@ -85,7 +84,7 @@ export default function CommandCenter() {
         <div className="card relative h-[420px] overflow-hidden sm:h-[520px] xl:h-auto xl:min-h-[600px]">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_60%_at_50%_45%,rgba(94,203,184,0.07),transparent_70%)]" />
           <Suspense fallback={<GlobeFallback />}>
-            <GlobeHero conferences={upcoming} scores={scores} clusters={clusters} homeBase={homeBase} today={today} focusId={focus} onSelect={(id) => { setFocus(id); navigate(`/?c=${id}`); }} />
+            <GlobeHero conferences={upcoming} scores={scores} clusters={clusters} homeBase={homeBase} today={today} focusId={focus} onSelect={(id) => { setFocus(id); openConference(id); }} />
           </Suspense>
           <div className="pointer-events-none absolute left-5 top-5">
             <p className="font-mono text-[10.5px] uppercase tracking-[0.16em] text-ink-dim">Conference orbit</p>
@@ -115,7 +114,7 @@ export default function CommandCenter() {
         <NeedsAttention />
       </div>
 
-      <DrawerFromQuery />
+      <ConferenceDrawerFromQuery />
     </div>
   );
 }
@@ -128,9 +127,3 @@ function GlobeFallback() {
   );
 }
 
-/** The globe opens the conference drawer via ?c=<id> so the URL stays shareable. */
-function DrawerFromQuery() {
-  const navigate = useNavigate();
-  const id = new URLSearchParams(window.location.search).get('c') ?? undefined;
-  return <ConferenceDrawer id={id} onClose={() => navigate('/')} />;
-}

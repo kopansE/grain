@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { NavLink, useNavigate } from 'react-router';
+import { NavLink, useNavigate, useSearchParams } from 'react-router';
 import { ExternalLink, MapPin, Plane, Ticket, Users, Zap } from 'lucide-react';
 import { Drawer } from '@/components/ui/Drawer';
 import { Button } from '@/components/ui/Button';
@@ -48,6 +48,31 @@ export function ConferenceDrawer({ id, onClose }: { id?: string; onClose: () => 
       {conference && <DrawerBody c={conference} />}
     </Drawer>
   );
+}
+
+/** Drawer driven by a `?c=<id>` query param, so any page can open a conference without leaving its route. */
+export function ConferenceDrawerFromQuery() {
+  const [params, setParams] = useSearchParams();
+  const id = params.get('c') ?? undefined;
+  return (
+    <ConferenceDrawer
+      id={id}
+      onClose={() => {
+        const next = new URLSearchParams(params);
+        next.delete('c');
+        setParams(next, { replace: true });
+      }}
+    />
+  );
+}
+
+export function useOpenConference(): (id: string) => void {
+  const [params, setParams] = useSearchParams();
+  return (id: string) => {
+    const next = new URLSearchParams(params);
+    next.set('c', id);
+    setParams(next);
+  };
 }
 
 function DrawerTitle({ c }: { c: Conference }) {

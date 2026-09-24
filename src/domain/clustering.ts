@@ -119,11 +119,24 @@ export interface Quarter {
   endDate: string;
 }
 
-/** The four quarters starting from the quarter containing `from`. */
-export function quartersFrom(from: string, count = 4): Quarter[] {
+/**
+ * The four quarters starting from the quarter containing `from`. When the
+ * current quarter has fewer than `skipWithinDays` days left it is skipped,
+ * because a planning grid that opens with an almost-finished quarter wastes
+ * a column on gaps nobody can act on.
+ */
+export function quartersFrom(from: string, count = 4, skipWithinDays = 30): Quarter[] {
   const d = new Date(from + 'T00:00:00Z');
   let year = d.getUTCFullYear();
   let q = Math.floor(d.getUTCMonth() / 3);
+  const quarterEnd = Date.UTC(year, q * 3 + 3, 0);
+  if ((quarterEnd - d.getTime()) / 86_400_000 < skipWithinDays) {
+    q++;
+    if (q === 4) {
+      q = 0;
+      year++;
+    }
+  }
   const out: Quarter[] = [];
   for (let i = 0; i < count; i++) {
     const startMonth = q * 3;
