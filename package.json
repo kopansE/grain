@@ -1,0 +1,44 @@
+{
+  "name": "grain-orbit",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Conference intelligence for Grain's sales team: know where to be, who to meet, and what to say.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -b",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.128.0",
+    "lucide-react": "^1.48.0",
+    "motion": "^13.4.2",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "react-globe.gl": "^2.38.0",
+    "react-router": "^8.4.0",
+    "recharts": "^3.10.1",
+    "three": "^0.186.0",
+    "zustand": "^5.0.15"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^26.6.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@types/three": "^0.186.0",
+    "@vercel/node": "^14.0.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "puppeteer-core": "^25.12.0",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^5.9.3",
+    "vite": "^8.3.0",
+    "vitest": "^5.0.1"
+  }
+}
