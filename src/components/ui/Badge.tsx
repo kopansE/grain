@@ -28,11 +28,13 @@ export function Badge({ children, className, tone = 'neutral' }: { children: Rea
   return <span className={cn('inline-flex h-6 items-center gap-1 rounded-full border px-2 text-[11px] font-semibold tracking-wide', tones[tone], className)}>{children}</span>;
 }
 
+const TIER_SHORT: Record<Tier, string> = { anchor: 'Anchor', cover: 'Cover', opportunistic: 'Opp.', skip: 'Skip' };
+
 export function TierBadge({ tier, className, short }: { tier: Tier; className?: string; short?: boolean }) {
   return (
-    <span className={cn('inline-flex h-6 items-center gap-1.5 rounded-full border px-2 text-[11px] font-semibold uppercase tracking-wider', TIER_CLASS[tier], className)}>
+    <span className={cn('inline-flex h-6 shrink-0 items-center gap-1.5 rounded-full border px-2 text-[11px] font-semibold uppercase tracking-wider', TIER_CLASS[tier], className)} title={TIER_LABELS[tier]}>
       <span className="h-1.5 w-1.5 rounded-full" style={{ background: TIER_COLOR[tier] }} />
-      {short ? TIER_LABELS[tier].slice(0, 5) : TIER_LABELS[tier]}
+      {short ? TIER_SHORT[tier] : TIER_LABELS[tier]}
     </span>
   );
 }

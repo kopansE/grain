@@ -16,6 +16,10 @@ const mobile = args.includes('--mobile');
 const full = args.includes('--full');
 const waitIdx = args.indexOf('--wait');
 const wait = waitIdx >= 0 ? Number(args[waitIdx + 1]) : 1200;
+// --click <selector> may repeat; each click is followed by a short wait. Text selectors: "::-p-text(Save lead)".
+const clicks = args.flatMap((a, i) => (a === '--click' ? [args[i + 1]] : []));
+const typeIdx = args.indexOf('--type');
+const typing = typeIdx >= 0 ? { selector: args[typeIdx + 1], text: args[typeIdx + 2] } : undefined;
 
 const CHROME_PATHS = [
   'C:/Program Files/Google/Chrome/Application/chrome.exe',
@@ -54,6 +58,18 @@ try {
   console.log(`(navigation did not go idle: ${e.message.split('\n')[0]}; taking the screenshot anyway)`);
 }
 await new Promise((r) => setTimeout(r, wait));
+if (typing) {
+  await page.type(typing.selector, typing.text, { delay: 20 });
+  await new Promise((r) => setTimeout(r, 600));
+}
+for (const sel of clicks) {
+  try {
+    await page.click(sel);
+    await new Promise((r) => setTimeout(r, 900));
+  } catch (e) {
+    console.log(`(click failed for ${sel}: ${e.message.split('\n')[0]})`);
+  }
+}
 await page.screenshot({ path: out, fullPage: full });
 await browser.close();
 
