@@ -1,6 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { fail, header, type ProxyRequest, type ProxyResponse } from './types';
-import { arcSummary, discover, extractCard, extractLead, followUp, preBrief, type AiCtx } from './features';
+import { fail, header, type ProxyRequest, type ProxyResponse } from './types.js';
+import { arcSummary, discover, extractCard, extractLead, followUp, preBrief, type AiCtx } from './features.js';
 
 export const DEFAULT_MODEL = 'claude-sonnet-5';
 

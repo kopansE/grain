@@ -1,4 +1,4 @@
-import { fail, header, type ProxyRequest, type ProxyResponse } from './types';
+import { fail, header, type ProxyRequest, type ProxyResponse } from './types.js';
 
 /**
  * Thin forwarder to the HubSpot API. Exists only because HubSpot does not
